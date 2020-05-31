@@ -1,16 +1,58 @@
-use crate::app::{InputData, WooCommerceRow};
+use crate::app::{InputData};
 use wasm_bindgen::__rt::std::error::Error;
-use csv::ReaderBuilder;
+use csv::{ReaderBuilder, Trim};
+use derive_builder::Builder;
+use yew::prelude::*;
+use wasm_bindgen::__rt::core::ptr::read_volatile;
 
 pub fn parse_csv(mut data: String) -> Result<InputData, Box<dyn Error>> {
-    let reader = ReaderBuilder::new().from_reader(data.as_bytes());
+    let reader = ReaderBuilder::new()
+        .double_quote(true)
+        .from_reader(data.as_bytes());
     let mut rdr = csv::Reader::from(reader);
     let mut input_data: Vec<WooCommerceRow> = Vec::new();
-    for result in rdr.deserialize() {
-        let record: WooCommerceRow = result?;
-        input_data.push(record);
+    for result in rdr.records() {
+        let record = result?;
+        input_data.push(WooCommerceRow {
+            order_id: record[0].parse()?,
+            order_date: record[1].to_owned(),
+            order_status: record[2].to_owned(),
+            customer_name: record[3].to_owned(),
+            order_total: record[4].to_owned(),
+            order_shipping: record[5].parse()?,
+            payment_gateway: record[6].to_owned(),
+            shipping_method: record[7].to_owned(),
+            shipping_address_line_1: record[8].to_owned(),
+            shipping_address_line_2: record[9].to_owned(),
+            shipping_postcode: record[10].to_owned(),
+            billing_phone_number: record[11].to_owned(),
+            _transaction_id: record[12].to_owned(),
+            product_name: record[13].to_owned(),
+            quantity: record[14].parse()?,
+            item_price: record[15].to_owned(),
+        });
     }
-    Ok(InputData{ data: input_data })
+    Ok(InputData { data: input_data })
+}
+
+#[derive(Builder, Clone)]
+pub struct WooCommerceRow {
+    pub order_id: u32,
+    pub order_date: String,
+    pub order_status: String,
+    pub customer_name: String,
+    pub order_total: String,
+    pub order_shipping: u32,
+    pub payment_gateway: String,
+    pub shipping_method: String,
+    pub shipping_address_line_1: String,
+    pub shipping_address_line_2: String,
+    pub shipping_postcode: String,
+    pub billing_phone_number: String,
+    pub _transaction_id: String,
+    pub product_name: String,
+    pub quantity: u32,
+    pub item_price: String,
 }
 
 #[test]

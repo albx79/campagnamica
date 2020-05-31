@@ -1,3 +1,5 @@
+#![recursion_limit="1000"]
+
 mod app;
 mod woocsv;
 

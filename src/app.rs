@@ -1,9 +1,8 @@
 use yew::prelude::*;
 use floating_bar::r64;
-use derive_builder::Builder;
-use serde::Deserialize;
 use stdweb::traits::INode;
 use stdweb::web::event::InputEvent;
+use crate::woocsv::{parse_csv, WooCommerceRow, WooCommerceRowBuilder};
 
 pub enum Msg {
     UpdateCsv(String),
@@ -11,30 +10,11 @@ pub enum Msg {
     PopulateInputData(InputData),
 }
 
-#[derive(Builder, Clone, Deserialize)]
-pub struct WooCommerceRow {
-    pub order_id: u32,
-    pub order_date: String,
-    pub order_status: String,
-    pub customer_name: String,
-    pub order_total: String,
-    pub order_shipping: u32,
-    pub payment_gateway: String,
-    pub shipping_method: String,
-    pub shipping_address_line_1: String,
-    pub shipping_address_line_2: String,
-    pub shipping_postcode: String,
-    pub billing_phone_number: String,
-    pub _transaction_id: String,
-    pub product_name: String,
-    pub quantity: u32,
-    pub item_price: String,
-}
-
 pub struct Gui {
     link: ComponentLink<Self>,
     textarea: NodeRef,
     text: String,
+    input_data: Option<InputData>,
 }
 
 impl Component for Gui {
@@ -42,11 +22,10 @@ impl Component for Gui {
     type Properties = ();
 
     fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        Gui{link, textarea: NodeRef::default(), text: "".to_owned()}
+        Gui{link, textarea: NodeRef::default(), text: "".to_owned(), input_data: None}
     }
 
     fn update(&mut self, msg: Self::Message) -> bool {
-        eprintln!("Processing message");
         match msg {
             Msg::ProcessCsv => {
                 let parsed = parse_csv(self.text.clone()).expect("failed to parse");
@@ -63,6 +42,7 @@ impl Component for Gui {
 
     fn view(&self) -> Html {
         use yew::InputData;
+        let elem: Option<()> = Some(());
         html! {
             <div>
                 <div>{"Copy-paste your woocommerce CSV into the textarea below:"}</div>
@@ -71,6 +51,9 @@ impl Component for Gui {
                     oninput=self.link.callback(|e: InputData| Msg::UpdateCsv(e.value))
                 />
                 <div><button onclick=self.link.callback(|_| Msg::ProcessCsv)>{"Process"}</button></div>
+                <div> {
+                    self.input_data.as_ref().map(|d| d.view()).unwrap_or(html!{<div/>})
+                }</div>
             </div>
         }
     }
