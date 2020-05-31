@@ -7,12 +7,13 @@ use wasm_bindgen::__rt::core::ptr::read_volatile;
 
 pub fn parse_csv(mut data: String) -> Result<InputData, Box<dyn Error>> {
     let reader = ReaderBuilder::new()
-        .double_quote(true)
+        // .double_quote(true)
         .from_reader(data.as_bytes());
     let mut rdr = csv::Reader::from(reader);
     let mut input_data: Vec<WooCommerceRow> = Vec::new();
     for result in rdr.records() {
         let record = result?;
+
         input_data.push(WooCommerceRow {
             order_id: record[0].parse()?,
             order_date: record[1].to_owned(),
@@ -35,7 +36,7 @@ pub fn parse_csv(mut data: String) -> Result<InputData, Box<dyn Error>> {
     Ok(InputData { data: input_data })
 }
 
-#[derive(Builder, Clone)]
+#[derive(Builder, Clone, Debug)]
 pub struct WooCommerceRow {
     pub order_id: u32,
     pub order_date: String,
@@ -72,4 +73,10 @@ fn test_parse_csv() {
     assert_eq!(parsed.len(), 9);
     assert_eq!(parsed[0].order_id, 5358);
     assert_eq!(parsed[8].item_price, "3.5");
+}
+
+#[test]
+fn test_parse_empty_data() {
+    let parsed = parse_csv("".to_owned()).unwrap();
+    assert_eq!(parsed.data.len(), 0);
 }
