@@ -1,4 +1,5 @@
 mod app;
+mod woocsv;
 
 use wasm_bindgen::prelude::*;
 

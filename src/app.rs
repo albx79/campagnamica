@@ -2,8 +2,6 @@ use yew::prelude::*;
 use floating_bar::r64;
 use derive_builder::Builder;
 use serde::Deserialize;
-use wasm_bindgen::__rt::std::error::Error;
-use csv::ReaderBuilder;
 use stdweb::traits::INode;
 use stdweb::web::event::InputEvent;
 
@@ -15,39 +13,28 @@ pub enum Msg {
 
 #[derive(Builder, Clone, Deserialize)]
 pub struct WooCommerceRow {
-    order_id: u32,
-    order_date: String,
-    order_status: String,
-    customer_name: String,
-    order_total: String,
-    order_shipping: u32,
-    payment_gateway: String,
-    shipping_method: String,
-    shipping_address_line_1: String,
-    shipping_address_line_2: String,
-    shipping_postcode: String,
-    billing_phone_number: String,
-    _transaction_id: String,
-    product_name: String,
-    quantity: u32,
-    item_price: String,
+    pub order_id: u32,
+    pub order_date: String,
+    pub order_status: String,
+    pub customer_name: String,
+    pub order_total: String,
+    pub order_shipping: u32,
+    pub payment_gateway: String,
+    pub shipping_method: String,
+    pub shipping_address_line_1: String,
+    pub shipping_address_line_2: String,
+    pub shipping_postcode: String,
+    pub billing_phone_number: String,
+    pub _transaction_id: String,
+    pub product_name: String,
+    pub quantity: u32,
+    pub item_price: String,
 }
 
 pub struct Gui {
     link: ComponentLink<Self>,
     textarea: NodeRef,
     text: String,
-}
-
-fn parse_csv(mut data: String) -> Result<InputData, Box<dyn Error>> {
-    let reader = ReaderBuilder::new().from_reader(data.as_bytes());
-    let mut rdr = csv::Reader::from(reader);
-    let mut input_data: Vec<WooCommerceRow> = Vec::new();
-    for result in rdr.deserialize() {
-        let record: WooCommerceRow = result?;
-        input_data.push(record);
-    }
-    Ok(InputData{ data: input_data })
 }
 
 impl Component for Gui {
@@ -159,4 +146,6 @@ pub struct OrderItem {
     item_price: r64,
 }
 
-pub struct InputData{ data: Vec<WooCommerceRow>}
+pub struct InputData {
+    pub data: Vec<WooCommerceRow>
+}

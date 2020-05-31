@@ -1,16 +1,15 @@
 [package]
 authors = [
-    "Kelly Thomas Kline <kellytk@sw-e.org>",
-    "Samuel Rounce <me@samuelrounce.co.uk>"
+    "Alberto Colombo <albx79@gmail.com>",
+    "Danilo Marino <danilo.marino@coldiretti.it>"
 ]
-categories = ["gui", "wasm", "web-programming"]
-description = "yew-wasm-pack-minimal demonstrates the minimum code and tooling necessary for a frontend web app with simple deployable artifacts consisting of one HTML file, one JavaScript file, and one WebAssembly file, using Yew, wasm-bindgen, and wasm-pack."
+categories = ["management", "e-commerce"]
+description = "Private project for CampagnAmica"
 edition = "2018"
-keywords = ["yew", "wasm", "wasm-bindgen", "web"]
 license = "MIT/Apache-2.0"
-name = "yew-wasm-pack-minimal"
+name = "campagnamica"
 readme = "README.md"
-repository = "https://github.com/yewstack/yew-wasm-pack-minimal"
+repository = "https://github.com/albx79/campagnamica"
 version = "0.1.0"
 
 [lib]
