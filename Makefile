@@ -6,3 +6,6 @@ bundle: build
 
 serve: bundle
 	python3 -m http.server 8000
+
+clean:
+	rm -R ./pkg/*

@@ -27,11 +27,16 @@ impl Component for Gui {
                 stdweb::console!(log, "Received update csv:", &data);
                 let parsed = parse_csv(data);
                 match parsed {
-                    Ok(data) => self.input_data = Some(data),
-                    Err(e) => self.error = Some(e),
+                    Ok(data) => {
+                        self.input_data = Some(data);
+                        self.error = None;
+                    },
+                    Err(e) => {
+                        self.error = Some(e.into());
+                        self.input_data = None;
+                    },
                 }
             }
-            x => { stdweb::console!(log, "Unknown message", format!("{:?}", x)); }
         };
         true
     }
@@ -154,7 +159,30 @@ impl Component for OrderDetails {
     fn view(&self) -> Html {
         html! {
             <tr>
-                <td>{self.order_id}</td>
+                <td>
+                    <table>
+                        <tr>
+                            <td>{self.order_id}</td>
+                            <td>{self.customer_name.clone()}</td>
+                        </tr>
+                        <tr>
+                            <td/>
+                            <td>{self.shipping_address_line_1.clone()}</td>
+                        </tr>
+                        <tr>
+                            <td/>
+                            <td>{self.shipping_address_line_2.clone()}</td>
+                        </tr>
+                        <tr>
+                            <td/>
+                            <td>{self.shipping_postcode.clone()}</td>
+                        </tr>
+                        <tr>
+                            <td/>
+                            <td>{self.billing_phone_number.clone()}</td>
+                        </tr>
+                    </table>
+                </td>
                 <td>
                     <table>
                     {

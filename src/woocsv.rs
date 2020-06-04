@@ -1,16 +1,16 @@
 use wasm_bindgen::__rt::std::error::Error;
 use csv::{ReaderBuilder};
 use derive_builder::Builder;
-use floating_bar::r64;
 use anyhow::{Context, Result};
 use wasm_bindgen::__rt::core::fmt::{Display, Formatter};
 
-pub fn parse_csv(data: String) -> Result<InputData, Box<dyn Error>> {
+pub fn parse_csv(data: String) -> Result<InputData> {
     let reader = ReaderBuilder::new().from_reader(data.as_bytes());
     let mut rdr = csv::Reader::from(reader);
     let mut data = Vec::new();
     for result in rdr.records() {
-        let record = result?;
+        let ctx = format!("{:?}", &result);
+        let record = result.context(ctx)?;
 
         data.push(WooCommerceRow {
             order_id: record[0].parse()?,
@@ -18,7 +18,7 @@ pub fn parse_csv(data: String) -> Result<InputData, Box<dyn Error>> {
             order_status: record[2].to_owned(),
             customer_name: record[3].to_owned(),
             order_total: record[4].to_owned(),
-            order_shipping: record[5].parse()?,
+            order_shipping: record[5].parse().with_context(|| format!("Invalid shipping: {}", &record[5]))?,
             payment_gateway: record[6].to_owned(),
             shipping_method: record[7].to_owned(),
             shipping_address_line_1: record[8].to_owned(),
@@ -27,7 +27,7 @@ pub fn parse_csv(data: String) -> Result<InputData, Box<dyn Error>> {
             billing_phone_number: record[11].to_owned(),
             _transaction_id: record[12].to_owned(),
             product_name: record[13].to_owned(),
-            quantity: record[14].parse()?,
+            quantity: record[14].parse().with_context(|| format!("Invalid quantity: {}", &record[14]))?,
             item_price: record[15].to_owned(),
         });
     }
@@ -62,6 +62,13 @@ pub struct InputData {
 #[derive(Clone, Builder)]
 pub struct OrderDetails {
     pub order_id: u32,
+    pub customer_name: String,
+    pub order_total: String,
+    pub payment_gateway: String,
+    pub shipping_address_line_1: String,
+    pub shipping_address_line_2: String,
+    pub shipping_postcode: String,
+    pub billing_phone_number: String,
     pub products: Vec<OrderItem>,
 }
 
@@ -78,8 +85,17 @@ impl InputData {
 
         let mut result = Vec::new();
         for (order_id, rows) in &self.data.iter().group_by(|row| row.order_id) {
+            let rows = rows.collect::<Vec<&WooCommerceRow>>();
+            let row = rows[0];
             let mut order_details = OrderDetails {
                 order_id,
+                customer_name: row.customer_name.clone(),
+                shipping_address_line_1: row.shipping_address_line_1.clone(),
+                shipping_address_line_2: row.shipping_address_line_2.clone(),
+                shipping_postcode: row.shipping_postcode.clone(),
+                billing_phone_number: row.billing_phone_number.clone(),
+                payment_gateway: row.payment_gateway.clone(),
+                order_total: row.order_total.clone(),
                 products: Vec::new(),
             };
             for o in rows {
@@ -105,18 +121,6 @@ impl Display for PriceParseError {
     }
 }
 impl Error for PriceParseError {}
-
-fn parse_r64(str: &str) -> Result<r64> {
-    let (num, den) = {
-        let split = str.trim().split('.').collect::<Vec<_>>();
-        match split.len() {
-            1 => (split[0].parse()?, 1),
-            2 => ((split[0].to_owned() + split[1]).parse()?, 10_u64.pow(split[1].len() as u32)),
-            _ => return Err(PriceParseError(format!("Invalid price string: '{}'", str))).context("Failed to parse price"),
-        }
-    };
-    Ok(r64::new(num, den))
-}
 
 #[cfg(test)]
 const DATA: &str = r###""Order ID","Order Date","Order Status","Customer Name","Order Total","Order Shipping","Payment Gateway","Shipping Method","Shipping Address Line 1","Shipping Address Line 2","Shipping Zip/Postcode","Billing Phone Number",_transaction_id,"Product Name","Quantity of items purchased","Item price EXCL. tax"
