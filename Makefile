@@ -1,4 +1,4 @@
-build: src/app.rs src/lib.rs src/woocsv.rs
+build:
 	wasm-pack build --target web
 
 bundle: build

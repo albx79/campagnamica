@@ -1,22 +1,14 @@
 use yew::prelude::*;
-use floating_bar::r64;
-use stdweb::traits::INode;
-use stdweb::web::event::InputEvent;
-use crate::woocsv::{parse_csv, WooCommerceRow, WooCommerceRowBuilder};
+use crate::woocsv::{parse_csv, WooCommerceRow, WooCommerceRowBuilder, InputData, OrderDetails, OrderDetailsBuilder, OrderItem, OrderItemBuilder};
 use wasm_bindgen::__rt::std::error::Error;
-use stdweb::web::Element;
 
 #[derive(Debug)]
 pub enum Msg {
     UpdateCsv(String),
-    ProcessCsv,
-    PopulateInputData(Result<InputData, Box<dyn Error>>),
 }
 
 pub struct Gui {
     link: ComponentLink<Self>,
-    textarea: NodeRef,
-    text: String,
     input_data: Option<InputData>,
     error: Option<Box<dyn Error>>,
 }
@@ -26,47 +18,54 @@ impl Component for Gui {
     type Properties = ();
 
     fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        Gui{link, textarea: NodeRef::default(), text: "".to_owned(), input_data: None, error: None}
+        Gui { link, input_data: None, error: None }
     }
 
     fn update(&mut self, msg: Self::Message) -> bool {
         match msg {
-            Msg::ProcessCsv => {
-                stdweb::console!(log, "Received process csv");
-                let textarea = self.textarea.cast::<Element>().unwrap();
-                self.link.send_message( Msg::PopulateInputData(parse_csv(textarea.node_value().unwrap_or("".to_owned()))));
-            },
             Msg::UpdateCsv(data) => {
-                stdweb::console!(log, "Received update csv", &data);
-                self.text = data;
+                stdweb::console!(log, "Received update csv:", &data);
+                let parsed = parse_csv(data);
+                match parsed {
+                    Ok(data) => self.input_data = Some(data),
+                    Err(e) => self.error = Some(e),
+                }
             }
-            Msg::PopulateInputData(Ok(data)) => {
-                stdweb::console!(log, "Received populate data", format!("{}", data.data.len()));
-                self.input_data = Some(data);
-            }
-            Msg::PopulateInputData(Err(e)) => {
-                stdweb::console!(log, "Received error", format!("{:?}", e));
-                self.error = Some(e);
-            }
+            x => { stdweb::console!(log, "Unknown message", format!("{:?}", x)); }
         };
         true
     }
 
     fn view(&self) -> Html {
         use yew::InputData;
-        let empty = html!{<div/>};
+        let empty = html! {<div/>};
         html! {
             <div>
                 <div>{"Copy-paste your woocommerce CSV into the textarea below:"}</div>
                 <textarea
-                    ref=self.textarea.clone() rows="40" cols="100"
+                    rows="30" cols="120"
                     oninput=self.link.callback(|e: InputData| Msg::UpdateCsv(e.value))
                 />
-                <div><button onclick=self.link.callback(|_| Msg::ProcessCsv)>{"Process"}</button></div>
-                <div>{self.text.clone()}</div>
                 {
                     self.input_data.as_ref().map(|d| html!{
+                    <div>
+                        <h2>{format!("Raw Data ({} rows)", d.data.len())}</h2>
                         <div>{d.view()}</div>
+                        <h2>{"Labels"}</h2>
+                        <div>
+                            <table>
+                            {
+                                d.labels().map(|labels| {
+                                    labels.iter().map(|label| label.view()).collect::<Html>()
+                                }).unwrap_or_else(|e| {
+                                    html! {
+                                        <div class="error">{e.to_string()}</div>
+                                    }
+                                })
+                            }
+                            </table>
+                        </div>
+                    </div>
                     }).unwrap_or(empty.clone())
                 }
                 {
@@ -84,7 +83,7 @@ impl Component for InputData {
     type Properties = ();
 
     fn create(_: Self::Properties, _: ComponentLink<Self>) -> Self {
-        InputData{ data: Vec::new() }
+        InputData { data: Vec::new() }
     }
 
     fn update(&mut self, _msg: Self::Message) -> bool {
@@ -125,7 +124,6 @@ impl Component for WooCommerceRow {
     }
 }
 
-
 impl Properties for WooCommerceRow {
     type Builder = WooCommerceRowBuilder;
 
@@ -134,18 +132,67 @@ impl Properties for WooCommerceRow {
     }
 }
 
-pub struct OrderDetails {
-    order_id: u32,
-    products: Vec<OrderItem>,
+impl Properties for OrderDetails {
+    type Builder = OrderDetailsBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::default()
+    }
+}
+impl Component for OrderDetails {
+    type Message = ();
+    type Properties = Self;
+
+    fn create(props: Self::Properties, _link: ComponentLink<Self>) -> Self {
+        props
+    }
+
+    fn update(&mut self, _msg: Self::Message) -> bool {
+        true
+    }
+
+    fn view(&self) -> Html {
+        html! {
+            <tr>
+                <td>{self.order_id}</td>
+                <td>
+                    <table>
+                    {
+                        self.products.iter().map(|product| { product.view() }).collect::<Html>()
+                    }
+                    </table>
+                </td>
+            </tr>
+        }
+    }
 }
 
-pub struct OrderItem {
-    product_name: String,
-    quantity: u32,
-    item_price: r64,
-}
+impl Properties for OrderItem {
+    type Builder = OrderItemBuilder;
 
-#[derive(Debug)]
-pub struct InputData {
-    pub data: Vec<WooCommerceRow>
+    fn builder() -> Self::Builder {
+        Self::Builder::default()
+    }
+}
+impl Component for OrderItem {
+    type Message = ();
+    type Properties = Self;
+
+    fn create(props: Self::Properties, _link: ComponentLink<Self>) -> Self {
+        props
+    }
+
+    fn update(&mut self, _msg: Self::Message) -> bool {
+        true
+    }
+
+    fn view(&self) -> Html {
+        html!{
+            <tr>
+                <td>{self.quantity}</td>
+                <td>{self.product_name.clone()}</td>
+                <td>{format!("{:.02}", self.item_price)}</td>
+            </tr>
+        }
+    }
 }
