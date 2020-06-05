@@ -1,10 +1,9 @@
 build:
 	wasm-pack build --target web
-
-bundle: build
 	rollup ./main.js --format iife --file ./pkg/bundle.js
+	cp .htaccess ./pkg
 
-serve: bundle
+serve: build
 	python3 -m http.server 8000
 
 clean:
