@@ -4,7 +4,9 @@ build:
 	cp .htaccess ./pkg
 
 serve: build
+	cd pkg
 	python3 -m http.server 8000
 
 clean:
+	cargo clean
 	rm -R ./pkg/*
