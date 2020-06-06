@@ -30,11 +30,11 @@ impl Component for Gui {
                     Ok(data) => {
                         self.input_data = Some(data);
                         self.error = None;
-                    },
+                    }
                     Err(e) => {
                         self.error = Some(e.into());
                         self.input_data = None;
-                    },
+                    }
                 }
             }
         };
@@ -45,7 +45,7 @@ impl Component for Gui {
         use yew::InputData;
         let empty = html! {<div/>};
         html! {
-            <div>
+            <div width="100%">
                 <div>{"Copy-paste your woocommerce CSV into the textarea below:"}</div>
                 <textarea
                     rows="30" cols="120"
@@ -54,22 +54,18 @@ impl Component for Gui {
                 {
                     self.input_data.as_ref().map(|d| html!{
                     <div>
-                        <h2>{format!("Raw Data ({} rows)", d.data.len())}</h2>
-                        <div>{d.view()}</div>
+                        // <h2>{format!("Raw Data ({} rows)", d.data.len())}</h2>
+                        // <div>{d.view()}</div>
                         <h2>{"Labels"}</h2>
-                        <div>
-                            <table>
-                            {
-                                d.labels().map(|labels| {
-                                    labels.iter().map(|label| label.view()).collect::<Html>()
-                                }).unwrap_or_else(|e| {
-                                    html! {
-                                        <div class="error">{e.to_string()}</div>
-                                    }
-                                })
-                            }
-                            </table>
-                        </div>
+                        {
+                            d.labels().map(|labels| {
+                                labels.iter().map(|label| label.view()).collect::<Html>()
+                            }).unwrap_or_else(|e| {
+                                html! {
+                                    <div class="error">{e.to_string()}</div>
+                                }
+                            })
+                        }
                     </div>
                     }).unwrap_or(empty.clone())
                 }
@@ -123,7 +119,7 @@ impl Component for WooCommerceRow {
     fn view(&self) -> Html {
         html! {
             <tr>
-                <td>{self.order_id}</td><td>{self.customer_name.clone()}</td><td>{self.product_name.clone()}</td>
+                <td>{self.order_id}</td><td>{&self.customer_name}</td><td>{&self.product_name}</td>
             </tr>
         }
     }
@@ -144,6 +140,7 @@ impl Properties for OrderDetails {
         Self::Builder::default()
     }
 }
+
 impl Component for OrderDetails {
     type Message = ();
     type Properties = Self;
@@ -158,39 +155,52 @@ impl Component for OrderDetails {
 
     fn view(&self) -> Html {
         html! {
-            <tr>
-                <td>
-                    <table>
-                        <tr>
-                            <td>{self.order_id}</td>
-                            <td>{self.customer_name.clone()}</td>
-                        </tr>
-                        <tr>
-                            <td/>
-                            <td>{self.shipping_address_line_1.clone()}</td>
-                        </tr>
-                        <tr>
-                            <td/>
-                            <td>{self.shipping_address_line_2.clone()}</td>
-                        </tr>
-                        <tr>
-                            <td/>
-                            <td>{self.shipping_postcode.clone()}</td>
-                        </tr>
-                        <tr>
-                            <td/>
-                            <td>{self.billing_phone_number.clone()}</td>
-                        </tr>
-                    </table>
-                </td>
-                <td>
-                    <table>
+         <div class="the-label">
+            <table class="address" width="100%">
+                <tr>
+                    <td width="60%" valign="top">
+                        <span>{format!("Ordine N.: {}", self.order_id)}</span><br/>
+                        <span>{format!("Data: {}", self.order_date)}</span><br/>
+                        <span>{format!("Tel.: {}", self.billing_phone_number)}</span><br/>
+                    </td>
+                    <td>
+                        <b>{"Indirizzo:"}</b><br/>
+                        <span>{&self.customer_name}</span><br/>
+                        <span>{&self.shipping_address_line_1}</span><br/>
+                        <span>{&self.shipping_address_line_2}</span><br/>
+                        <span>{format!("Milano, Milano, {}", self.shipping_postcode)}</span><br/>
+                        <span>{"Italia"}</span><br/>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="order-items" width="100%">
+                <thead>
+                    <tr height="3vm">
+                        <th class="product">{"Prodotto"}</th>
+                        <th class="quantity">{"Quantità"}</th>
+                    </tr>
+                </thead>
+                <tbody>
                     {
                         self.products.iter().map(|product| { product.view() }).collect::<Html>()
                     }
-                    </table>
-                </td>
-            </tr>
+                    <tr>
+                        <td align="right"><b>{"Consegna"}</b></td>
+                        <td align="center">{format!("{:.02}€ Spedito tramite {}", self.order_shipping, self.shipping_method )}</td>
+                    </tr>
+                    <tr>
+                        <td align="right"><b>{"Metodo Pagamento"}</b></td>
+                        <td align="center">{&self.payment_gateway}</td>
+                    </tr>
+                    <tr>
+                        <td align="right"><b>{"Totale"}</b></td>
+                        <td align="center">{format!("{}€", self.order_total)}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><br/></p>
+        </div>
         }
     }
 }
@@ -202,6 +212,7 @@ impl Properties for OrderItem {
         Self::Builder::default()
     }
 }
+
 impl Component for OrderItem {
     type Message = ();
     type Properties = Self;
@@ -215,11 +226,10 @@ impl Component for OrderItem {
     }
 
     fn view(&self) -> Html {
-        html!{
+        html! {
             <tr>
-                <td>{self.quantity}</td>
-                <td>{self.product_name.clone()}</td>
-                <td>{format!("{:.02}", self.item_price)}</td>
+                <td class="product"><b>{&self.product_name}</b></td>
+                <td class="quantity" align="center">{self.quantity}</td>
             </tr>
         }
     }

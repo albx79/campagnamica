@@ -41,7 +41,7 @@ pub struct WooCommerceRow {
     pub order_status: String,
     pub customer_name: String,
     pub order_total: String,
-    pub order_shipping: u32,
+    pub order_shipping: f32,
     pub payment_gateway: String,
     pub shipping_method: String,
     pub shipping_address_line_1: String,
@@ -64,10 +64,13 @@ pub struct OrderDetails {
     pub order_id: u32,
     pub customer_name: String,
     pub order_total: String,
+    pub order_shipping: f32,
+    pub shipping_method: String,
     pub payment_gateway: String,
     pub shipping_address_line_1: String,
     pub shipping_address_line_2: String,
     pub shipping_postcode: String,
+    pub order_date: String,
     pub billing_phone_number: String,
     pub products: Vec<OrderItem>,
 }
@@ -95,7 +98,10 @@ impl InputData {
                 shipping_postcode: row.shipping_postcode.clone(),
                 billing_phone_number: row.billing_phone_number.clone(),
                 payment_gateway: row.payment_gateway.clone(),
+                order_date: row.order_date.clone(),
                 order_total: row.order_total.clone(),
+                order_shipping: row.order_shipping,
+                shipping_method: row.shipping_method.clone(),
                 products: Vec::new(),
             };
             for o in rows {
