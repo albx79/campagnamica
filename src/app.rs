@@ -168,7 +168,7 @@ impl Component for OrderDetails {
                         <span>{&self.customer_name}</span><br/>
                         <span>{&self.shipping_address_line_1}</span><br/>
                         <span>{&self.shipping_address_line_2}</span><br/>
-                        <span>{format!("Milano, Milano, {}", self.shipping_postcode)}</span><br/>
+                        <span>{format!("Milano, {}", self.shipping_postcode)}</span><br/>
                         <span>{"Italia"}</span><br/>
                     </td>
                 </tr>
@@ -187,7 +187,7 @@ impl Component for OrderDetails {
                     }
                     <tr>
                         <td align="right"><b>{"Consegna"}</b></td>
-                        <td align="center">{format!("{:.02}€ Spedito tramite {}", self.order_shipping, self.shipping_method )}</td>
+                        <td align="center">{&self.delivery}</td>
                     </tr>
                     <tr>
                         <td align="right"><b>{"Metodo Pagamento"}</b></td>

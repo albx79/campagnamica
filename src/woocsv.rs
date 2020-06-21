@@ -64,8 +64,7 @@ pub struct OrderDetails {
     pub order_id: u32,
     pub customer_name: String,
     pub order_total: String,
-    pub order_shipping: f32,
-    pub shipping_method: String,
+    pub delivery: String,
     pub payment_gateway: String,
     pub shipping_address_line_1: String,
     pub shipping_address_line_2: String,
@@ -89,7 +88,7 @@ impl InputData {
         let mut result = Vec::new();
         for (order_id, rows) in &self.data.iter().group_by(|row| row.order_id) {
             let rows = rows.collect::<Vec<&WooCommerceRow>>();
-            let row = rows[0];
+            let row: &WooCommerceRow = rows[0];
             let mut order_details = OrderDetails {
                 order_id,
                 customer_name: row.customer_name.clone(),
@@ -100,8 +99,7 @@ impl InputData {
                 payment_gateway: row.payment_gateway.clone(),
                 order_date: row.order_date.clone(),
                 order_total: row.order_total.clone(),
-                order_shipping: row.order_shipping,
-                shipping_method: row.shipping_method.clone(),
+                delivery: Self::map_shipping_to_delivery(row.order_shipping),
                 products: Vec::new(),
             };
             for o in rows {
@@ -116,6 +114,14 @@ impl InputData {
         }
 
         Ok(result)
+    }
+
+    fn map_shipping_to_delivery(order_shipping: f32) -> String {
+        if order_shipping == 0.0 {
+            "local pick up".to_owned()
+        } else {
+            format!("{} €", order_shipping)
+        }
     }
 }
 
@@ -134,11 +140,11 @@ const DATA: &str = r###""Order ID","Order Date","Order Status","Customer Name","
 5358,2020/05/24,processing,"PERINO LUPO","57,10",5,"PayPal o carta di credito",flat_rate:1,"VIA DEI PAZZI 0","SCALA A DESTRA SECONDO PIANO",20146,3355700000,0P128552W4082524Y,"CARNE TRITA DI MANZO PER RAGU' E POLPETTE 500 g",1,3.5
 5358,2020/05/24,processing,"PERINO LUPO","57,10",5,"PayPal o carta di credito",flat_rate:1,"VIA DEI PAZZI 0","SCALA A DESTRA SECONDO PIANO",20146,3355700000,0P128552W4082524Y,"FETTINE DI LONZA DI SUINO 500 g",1,4
 5358,2020/05/24,processing,"PERINO LUPO","57,10",5,"PayPal o carta di credito",flat_rate:1,"VIA DEI PAZZI 0","SCALA A DESTRA SECONDO PIANO",20146,3355700000,0P128552W4082524Y,"GALLETTO VALLE SPLUGA ALLE ERBE DI MONTAGNA 500 g",1,4.6
-5357,2020/05/24,processing,"Maria Luisa","57,90",5,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"INSALATA VARIA 500 g",1,1.4
-5357,2020/05/24,processing,"Maria Luisa","57,90",5,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"SELEZIONE B ""IL VEGETARIANO""",1,40
-5357,2020/05/24,processing,"Maria Luisa","57,90",5,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"YOGURT DI CAPRA 500 g",1,3
-5357,2020/05/24,processing,"Maria Luisa","57,90",5,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"10 ARROSTICINI DI SUINO 300 g",1,5
-5357,2020/05/24,processing,"Maria Luisa","57,90",5,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"PANE AI CEREALI ANTICHI 500 g",1,3.5
+5357,2020/05/24,processing,"Maria Luisa","57,90",0,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"INSALATA VARIA 500 g",1,1.4
+5357,2020/05/24,processing,"Maria Luisa","57,90",0,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"SELEZIONE B ""IL VEGETARIANO""",1,40
+5357,2020/05/24,processing,"Maria Luisa","57,90",0,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"YOGURT DI CAPRA 500 g",1,3
+5357,2020/05/24,processing,"Maria Luisa","57,90",0,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"10 ARROSTICINI DI SUINO 300 g",1,5
+5357,2020/05/24,processing,"Maria Luisa","57,90",0,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"PANE AI CEREALI ANTICHI 500 g",1,3.5
 "###;
 
 #[test]
@@ -153,6 +159,7 @@ fn test_parse_csv() {
     assert_eq!(labels.len(), 2);
     assert_eq!(labels[0].order_id, 5358);
     assert_eq!(labels[0].products.len(), 4);
+    assert_eq!(&labels[0].delivery, "5 €");
     assert_eq!(labels[0].products[0].product_name, r#"SELEZIONE B "IL VEGETARIANO""#);
     assert_eq!(labels[0].products[0].item_price, 40.0);
     assert_eq!(labels[0].products[0].quantity, 1);
@@ -161,6 +168,7 @@ fn test_parse_csv() {
     assert_eq!(labels[0].products[3].quantity, 1);
 
     assert_eq!(labels[1].order_id, 5357);
+    assert_eq!(&labels[1].delivery, "local pick up");
     assert_eq!(labels[1].products.len(), 5);
 }
 
