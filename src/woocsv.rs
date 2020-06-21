@@ -3,6 +3,7 @@ use csv::{ReaderBuilder};
 use derive_builder::Builder;
 use anyhow::{Context, Result};
 use wasm_bindgen::__rt::core::fmt::{Display, Formatter};
+use wasm_bindgen::__rt::std::collections::HashMap;
 
 pub fn parse_csv(data: String) -> Result<InputData> {
     let reader = ReaderBuilder::new().from_reader(data.as_bytes());
@@ -81,6 +82,12 @@ pub struct OrderItem {
     pub item_price: f32,
 }
 
+#[derive(Clone, Builder)]
+pub struct SummaryRow {
+    pub product_name: String,
+    pub total_quantity: u32,
+}
+
 impl InputData {
     pub fn labels(&self) -> Result<Vec<OrderDetails>> {
         use itertools::Itertools;
@@ -113,6 +120,14 @@ impl InputData {
             result.push(order_details);
         }
 
+        Ok(result)
+    }
+
+    pub fn summary(&self) -> Result<HashMap<String, u32>> {
+        let mut result: HashMap<String, u32> = HashMap::new();
+        for row in &self.data {
+            *result.entry(row.product_name.clone()).or_insert(0) += 1;
+        }
         Ok(result)
     }
 
@@ -170,6 +185,10 @@ fn test_parse_csv() {
     assert_eq!(labels[1].order_id, 5357);
     assert_eq!(&labels[1].delivery, "local pick up");
     assert_eq!(labels[1].products.len(), 5);
+
+    let summary = parsed.summary().unwrap();
+    assert_eq!(summary.len(), 8);
+    assert_eq!(summary[r#"SELEZIONE B "IL VEGETARIANO""#], 2);
 }
 
 #[test]

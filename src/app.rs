@@ -66,6 +66,31 @@ impl Component for Gui {
                                 }
                             })
                         }
+                        <hr/>
+                        <h2>{"Summary"}</h2>
+                        {
+                            d.summary().map(|summary_rows| { html!{
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th class="product" align="left">{"Prodotto"}</th>
+                                        <th class="quantity" align="right">{"Quantità"}</th>
+                                    </tr>
+                                </thead>
+                                <tbody> {
+                                    summary_rows.iter().map(|(prod, qty)| html! {
+                                        <tr>
+                                            <td>{&prod}</td> <td align="right">{format!("{}", qty)}</td>
+                                        </tr>
+                                    }).collect::<Html>()
+                                } </tbody>
+                            </table>
+                            } }).unwrap_or_else(|e| {
+                                html! {
+                                    <div class="error">{e.to_string()}</div>
+                                }
+                            })
+                        }
                     </div>
                     }).unwrap_or(empty.clone())
                 }
