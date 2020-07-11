@@ -54,12 +54,15 @@ impl Component for Gui {
                 {
                     self.input_data.as_ref().map(|d| html!{
                     <div>
-                        // <h2>{format!("Raw Data ({} rows)", d.data.len())}</h2>
-                        // <div>{d.view()}</div>
                         <h2>{"Labels"}</h2>
                         {
-                            d.labels().map(|labels| {
-                                labels.iter().map(|label| label.view()).collect::<Html>()
+                            d.labels().map(|labels| html!{
+                                <div>
+                                {
+                                    labels.iter().map(|label| label.view()).collect::<Html>()
+                                }
+                                <p>{format!("Number of deliveries: {}", labels.len())}</p>
+                                </div>
                             }).unwrap_or_else(|e| {
                                 html! {
                                     <div class="error">{e.to_string()}</div>
@@ -68,29 +71,21 @@ impl Component for Gui {
                         }
                         <hr/>
                         <h2>{"Summary"}</h2>
-                        {
-                            d.summary().map(|summary_rows| { html!{
-                            <table>
-                                <thead>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="product" align="left">{"Prodotto"}</th>
+                                    <th class="quantity" align="right">{"Quantità"}</th>
+                                </tr>
+                            </thead>
+                            <tbody> {
+                                d.summary().iter().map(|(prod, qty)| html! {
                                     <tr>
-                                        <th class="product" align="left">{"Prodotto"}</th>
-                                        <th class="quantity" align="right">{"Quantità"}</th>
+                                        <td>{&prod}</td> <td align="right">{format!("{}", qty)}</td>
                                     </tr>
-                                </thead>
-                                <tbody> {
-                                    summary_rows.iter().map(|(prod, qty)| html! {
-                                        <tr>
-                                            <td>{&prod}</td> <td align="right">{format!("{}", qty)}</td>
-                                        </tr>
-                                    }).collect::<Html>()
-                                } </tbody>
-                            </table>
-                            } }).unwrap_or_else(|e| {
-                                html! {
-                                    <div class="error">{e.to_string()}</div>
-                                }
-                            })
-                        }
+                                }).collect::<Html>()
+                            } </tbody>
+                        </table>
                     </div>
                     }).unwrap_or(empty.clone())
                 }

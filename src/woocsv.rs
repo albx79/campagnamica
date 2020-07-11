@@ -123,12 +123,16 @@ impl InputData {
         Ok(result)
     }
 
-    pub fn summary(&self) -> Result<HashMap<String, u32>> {
+    pub fn summary(&self) -> Vec<(String, u32)> {
+        use itertools::Itertools;
+
         let mut result: HashMap<String, u32> = HashMap::new();
         for row in &self.data {
             *result.entry(row.product_name.clone()).or_insert(0) += 1;
         }
-        Ok(result)
+        result.into_iter()
+            .sorted_by(|t1, t2| t1.0.cmp(&t2.0))
+            .collect()
     }
 
     fn map_shipping_to_delivery(order_shipping: f32) -> String {
@@ -186,9 +190,11 @@ fn test_parse_csv() {
     assert_eq!(&labels[1].delivery, "local pick up");
     assert_eq!(labels[1].products.len(), 5);
 
-    let summary = parsed.summary().unwrap();
+    let summary = parsed.summary();
     assert_eq!(summary.len(), 8);
-    assert_eq!(summary[r#"SELEZIONE B "IL VEGETARIANO""#], 2);
+    assert_eq!(summary.iter().find(|(key, _)| key == r#"SELEZIONE B "IL VEGETARIANO""#).unwrap().1, 2);
+    let second = &summary[1];
+    assert_eq!(second.0, "CARNE TRITA DI MANZO PER RAGU' E POLPETTE 500 g");
 }
 
 #[test]
