@@ -109,7 +109,7 @@ impl InputData {
                 delivery: Self::map_shipping_to_delivery(row.order_shipping),
                 products: Vec::new(),
             };
-            for o in rows {
+            for o in rows.iter().sorted_by_key(|r| &r.product_name) {
                 order_details.products.push(OrderItem {
                     quantity: o.quantity,
                     product_name: o.product_name.clone(),
@@ -179,12 +179,12 @@ fn test_parse_csv() {
     assert_eq!(labels[0].order_id, 5358);
     assert_eq!(labels[0].products.len(), 4);
     assert_eq!(&labels[0].delivery, "5 €");
-    assert_eq!(labels[0].products[0].product_name, r#"SELEZIONE B "IL VEGETARIANO""#);
-    assert_eq!(labels[0].products[0].item_price, 40.0);
-    assert_eq!(labels[0].products[0].quantity, 1);
-    assert_eq!(labels[0].products[3].product_name, r#"GALLETTO VALLE SPLUGA ALLE ERBE DI MONTAGNA 500 g"#);
-    assert_eq!(labels[0].products[3].item_price, 4.6);
+    assert_eq!(labels[0].products[3].product_name, r#"SELEZIONE B "IL VEGETARIANO""#);
+    assert_eq!(labels[0].products[3].item_price, 40.0);
     assert_eq!(labels[0].products[3].quantity, 1);
+    assert_eq!(labels[0].products[2].product_name, r#"GALLETTO VALLE SPLUGA ALLE ERBE DI MONTAGNA 500 g"#);
+    assert_eq!(labels[0].products[2].item_price, 4.6);
+    assert_eq!(labels[0].products[2].quantity, 1);
 
     assert_eq!(labels[1].order_id, 5357);
     assert_eq!(&labels[1].delivery, "local pick up");
