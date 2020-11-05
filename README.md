@@ -34,10 +34,13 @@ Build artifacts, consisting of a Bundle, are stored under `./pkg`.
 Optionally, if `python3` is available, you can run `make serve` to start a local webserver serving
 this app.
 
-Note: It's expected behavior for the browser console to display an error similar to 
-"WebAssembly.instantiateStreaming failed. Assuming this is because your server does not 
-serve wasm with application/wasm MIME type."  Your production webserver should be configured 
-to associate WebAssembly files with the `application/wasm` MIME type.
+Note: it's expected behavior for the browser console to display an error similar to
+     
+    WebAssembly.instantiateStreaming failed. Assuming this is because your 
+    server does not serve wasm with application/wasm MIME type.
+
+Your production webserver should be configured to associate WebAssembly files with the 
+`application/wasm` MIME type.
 
 ### 5) Deploy
 
