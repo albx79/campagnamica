@@ -1,11 +1,11 @@
-use wasm_bindgen::__rt::std::error::Error;
-use csv::{ReaderBuilder};
-use derive_builder::Builder;
 use anyhow::{Context, Result};
+use csv::ReaderBuilder;
+use derive_builder::Builder;
 use wasm_bindgen::__rt::core::fmt::{Display, Formatter};
 use wasm_bindgen::__rt::std::collections::HashMap;
+use wasm_bindgen::__rt::std::error::Error;
 
-pub fn parse_csv(data: String) -> Result<InputData> {
+pub fn parse_csv(data: &str) -> Result<InputData> {
     let reader = ReaderBuilder::new().from_reader(data.as_bytes());
     let mut rdr = csv::Reader::from(reader);
     let mut data = Vec::new();
@@ -58,6 +58,17 @@ pub struct WooCommerceRow {
 #[derive(Debug)]
 pub struct InputData {
     pub data: Vec<WooCommerceRow>
+}
+
+#[derive(Debug)]
+pub struct ProductData {
+    pub data: Vec<ProductRow>
+}
+
+impl ProductData {
+    pub fn get(&self, index: &str) -> Option<ProductRow> {
+        self.data.iter().cloned().find(|row| row.product_name == index)
+    }
 }
 
 #[derive(Clone, Builder)]
@@ -168,7 +179,7 @@ const DATA: &str = r###""Order ID","Order Date","Order Status","Customer Name","
 
 #[test]
 fn test_parse_csv() {
-    let parsed = parse_csv(DATA.to_owned()).unwrap();
+    let parsed = parse_csv(DATA).unwrap();
     let data = &parsed.data;
     assert_eq!(data.len(), 9);
     assert_eq!(data[0].order_id, 5358);
@@ -199,7 +210,95 @@ fn test_parse_csv() {
 
 #[test]
 fn test_parse_empty_data() {
-    let parsed = parse_csv("".to_owned()).unwrap();
+    let parsed = parse_csv("").unwrap();
     assert_eq!(parsed.data.len(), 0);
 }
 
+#[derive(Debug, Clone)]
+pub struct ProductRow {
+    pub id: u32,
+    pub category: String,
+    pub provenance: String,
+    pub net_weight: f32,
+    pub product_type: u32,
+    pub departure_code: String,
+    pub product_name: String,
+    pub price: String,
+    pub unit: String,
+    pub vat: String,
+    pub department: u32,
+    pub plu_code: String,
+    pub ean_12_chars: String,
+    pub ean_13_own: String,
+    pub ean_13_vendor: String,
+}
+
+pub fn parse_product_data(data: &str) -> Result<ProductData> {
+    let reader = ReaderBuilder::new().delimiter(b';').from_reader(data.as_bytes());
+    let mut rdr = csv::Reader::from(reader);
+    let mut data = Vec::new();
+    for result in rdr.records() {
+        let ctx = format!("{:?}", &result);
+        eprintln!("Read: {}", ctx);
+        let record = result.context(ctx)?;
+
+        data.push(ProductRow {
+            id: record[0].parse()?,
+            category: record[1].to_owned(),
+            provenance: record[2].to_owned(),
+            net_weight: record[3].parse()?,
+            product_type: record[4].parse()?,
+            departure_code: record[5].to_owned(),
+            product_name: record[6].to_owned(),
+            price: record[7].to_owned(),
+            unit: record[8].to_owned(),
+            vat: record[9].to_owned(),
+            department: record[10].parse()?,
+            plu_code: record[11].to_owned(),
+            ean_12_chars: record[12].to_owned(),
+            ean_13_own: record[13].to_owned(),
+            ean_13_vendor: record[14].to_owned(),
+        });
+    }
+    Ok(ProductData{data})
+}
+
+#[cfg(test)]
+const PRODUCT_DATA: &str = r###"Progressivo;Categoria;Provenienza;Preincartato al KG;Tipo Articolo;Codice di partenza;Prodotto;Prezzo;Unita;Iva;Reparto fiscale;Codice PLU Olivetti;12 caratteri EAN;EAN 13 proprio;EAN 13 fornitore
+1;FORMAGGI;agricolo;0;5;50001;Mozzarella BIO 350 gr;4,50;pezzo;4%;1;50001;;;2130001004009
+2;PRODOTTI MANIPOLATI O TRASFORMATI;agricolo;0;5;;PANE CER ANTICH 500 G;3,50;pezzo;4%;1;50002;;;2130002003704
+3;CEREALI;agricolo;0;5;;RISO 1 KG;2,50;pezzo;4%;1;50003;;;2130003002508
+4;ORTAGGI;agricolo;0;5;;FINOCCHI 1 KG;2,50;pezzo;4%;1;50006;;;2130006001409
+5;FRUTTA;agricolo;0;5;;ARANCE 2 KG;3,50;pezzo;4%;1;50007;;;2130007004003
+6;ORTAGGI;agricolo;0;5;;CICORINO 500 G;1,30;pezzo;4%;1;50008;;;2130008001308
+7;FRUTTA;agricolo;0;5;;KIWI 1 KG;3,50;pezzo;4%;1;50010;;;2130010003000
+8;FRUTTA;agricolo;0;5;;FRAGOLE 500 G;2,50;pezzo;4%;1;50011;;;2130011003009
+9;ORTAGGI;agricolo;0;5;;sc-CAROTE 500 G;1,00;pezzo;4%;1;50012;;;2109042020040
+10;ORTAGGI;agricolo;0;5;;DATTERINO 500 g;2,50;pezzo;4%;1;50014;;;2109042020033
+11;FORMAGGI;agricolo;0;5;;FORM TOMA LATCRU 300G;3,90;pezzo;4%;1;50015;;;2130015003203
+12;FORMAGGI;agricolo;0;5;;FORM CAPRINO 200 G;3,50;pezzo;4%;1;50016;;;2130016003004
+13;ORTAGGI;agricolo;0;5;;ZUCCHINE 500 Gs;1,50;pezzo;4%;1;50017;;;2130017003003
+14;ORTAGGI;agricolo;0;5;;CIMA DI RAPA 500 g;1,50;pezzo;4%;1;50018;;;2130018002500
+15;FORMAGGI;agricolo;0;5;;MOZ LATT BUFALA 250 G;3,50;pezzo;4%;1;50019;;;2130019003506
+16;FORMAGGI;agricolo;0;5;;GRANA 30 MESI 300 G;3,80;pezzo;4%;1;50025;;;2130025003804
+17;CARNI E SALUMI;agricolo;0;5;;PROSCIUT. COTTO 200 G;3,70;pezzo;10%;2;50004;;;2130004003702
+18;CARNI E SALUMI;agricolo;0;5;;PETTO DI POLLO 700 G;7,00;pezzo;10%;2;50005;;;2130005007006
+19;DERIVATI ANIMALI;agricolo;0;5;;UOVA 6;2,40;pezzo;10%;2;50009;;;2130009002403
+20;CARNI E SALUMI;agricolo;0;5;;HAMBURGER 4 (500 G);6,00;pezzo;10%;2;50020;;;2130020006008
+21;PESCI E MOLLUSCHI;agricolo;0;5;;STORIONE FILETTO 450G;5,00;pezzo;10%;2;50021;;;2130021007004
+22;CARNI E SALUMI;agricolo;0;5;;GALLET VALLESPL 500 G;4,00;pezzo;10%;2;50022;;;2130022004002
+23;CARNI E SALUMI;agricolo;0;5;;PROSC CRUDO 200 G;5,00;pezzo;10%;2;50023;;;2130023005008
+24;CARNI E SALUMI;agricolo;0;5;;SALAME PICCOLO 200 G;4,00;pezzo;10%;2;50024;;;2109042020170
+"###;
+
+#[cfg(test)]
+#[test]
+fn test_parse_product_data() {
+    let parsed = parse_product_data(PRODUCT_DATA).unwrap();
+    assert_eq!(parsed.data[0].id, 1);
+    assert_eq!(parsed.data[23].id, 24);
+    assert_eq!(parsed.data[0].product_name, "Mozzarella BIO 350 gr");
+    assert_eq!(parsed.data[0].ean_13_vendor, "2130001004009");
+
+    assert_eq!(&parsed.get("Mozzarella BIO 350 gr").unwrap().ean_13_vendor, "2130001004009");
+}
