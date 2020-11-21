@@ -91,6 +91,7 @@ pub struct OrderItem {
     pub product_name: String,
     pub quantity: u32,
     pub item_price: f32,
+    pub ean13: Option<String>,
 }
 
 #[derive(Clone, Builder)]
@@ -100,7 +101,7 @@ pub struct SummaryRow {
 }
 
 impl InputData {
-    pub fn labels(&self) -> Result<Vec<OrderDetails>> {
+    pub fn labels(&self, product_data: &Option<ProductData>) -> Result<Vec<OrderDetails>> {
         use itertools::Itertools;
 
         let mut result = Vec::new();
@@ -121,10 +122,14 @@ impl InputData {
                 products: Vec::new(),
             };
             for o in rows.iter().sorted_by_key(|r| &r.product_name) {
+                let ean13 = product_data.as_ref()
+                    .and_then(|d| d.get(&o.product_name))
+                    .map(|d| d.ean_13_vendor.clone());
                 order_details.products.push(OrderItem {
                     quantity: o.quantity,
                     product_name: o.product_name.clone(),
-                    item_price: o.item_price.parse().with_context(|| format!("Invalid price: {}", o.item_price))?
+                    item_price: o.item_price.parse().with_context(|| format!("Invalid price: {}", o.item_price))?,
+                    ean13,
                 })
             }
 
@@ -185,7 +190,7 @@ fn test_parse_csv() {
     assert_eq!(data[0].order_id, 5358);
     assert_eq!(data[8].item_price, "3.5");
 
-    let labels = parsed.labels().unwrap();
+    let labels = parsed.labels(&None).unwrap();
     assert_eq!(labels.len(), 2);
     assert_eq!(labels[0].order_id, 5358);
     assert_eq!(labels[0].products.len(), 4);
