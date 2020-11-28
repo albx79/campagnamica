@@ -77,7 +77,7 @@ impl Component for Gui {
                     <div>
                         <h2>{"Labels"}</h2>
                         {
-                            d.labels(&self.product_list).map(|labels| html!{
+                            d.labels().map(|labels| html!{
                                 <div>
                                 {
                                     labels.iter().map(|label| label.view()).collect::<Html>()
@@ -97,6 +97,7 @@ impl Component for Gui {
                                 <tr>
                                     <th class="product" align="left">{"Prodotto"}</th>
                                     <th class="quantity" align="right">{"Quantità"}</th>
+                                    <th class="barcode" align="right">{"Barcode"}</th>
                                 </tr>
                             </thead>
                             <tbody> {
@@ -104,6 +105,17 @@ impl Component for Gui {
                                     <tr>
                                         <td>{&prod}</td>
                                         <td align="right">{format!("{}", qty)}</td>
+                                        <td aligh="right">{
+                                            self.product_list.as_ref()
+                                                .and_then(|products| products.get(&prod))
+                                                .map(|prod| html!{
+                                                    <img src={format!("https://barcode.tec-it.com/barcode.ashx?data={}&code=EAN13&dpi=96", prod.ean_13_vendor)}/>
+                                                })
+                                                .unwrap_or_else(|| html!{
+                                                    <span>{"No product data"}</span>
+                                                })
+                                        }
+                                        </td>
                                     </tr>
                                 }).collect::<Html>()
                             } </tbody>
@@ -219,26 +231,13 @@ impl Component for OrderDetails {
             <table class="order-items" width="100%">
                 <thead>
                     <tr height="3vm">
-                        <th class="quantity">{"Quantità"}</th>
                         <th class="product">{"Prodotto"}</th>
-                        <th class="barcode">{"Codice"}</th>
+                        <th class="quantity">{"Quantità"}</th>
                     </tr>
                 </thead>
                 <tbody>
                     {
-                        self.products.iter().map(|product| html! {
-                            <tr>
-                                <td class="quantity" align="center">{product.quantity}</td>
-                                <td class="product"><b>{&product.product_name}</b></td>
-                                <td class="barcode">{
-                                    product.ean13.as_ref().map(|code| html! {
-                                                    <img src={format!("https://barcode.tec-it.com/barcode.ashx?data={}&code=EAN13&dpi=96", code)}/>
-                                                }).unwrap_or_else(|| html!{ <span/> })
-                                    }
-                                </td>
-
-                            </tr>
-                        }).collect::<Html>()
+                        self.products.iter().map(|product| { product.view() }).collect::<Html>()
                     }
                     <tr>
                         <td align="right"><b>{"Consegna"}</b></td>
@@ -268,24 +267,24 @@ impl Properties for OrderItem {
     }
 }
 
-// impl Component for OrderItem {
-//     type Message = ();
-//     type Properties = Self;
-//
-//     fn create(props: Self::Properties, _link: ComponentLink<Self>) -> Self {
-//         props
-//     }
-//
-//     fn update(&mut self, _msg: Self::Message) -> bool {
-//         true
-//     }
-//
-//     fn view(&self) -> Html {
-//         html! {
-//             <tr>
-//                 <td class="quantity" align="center">{self.quantity}</td>
-//                 <td class="product"><b>{&self.product_name}</b></td>
-//             </tr>
-//         }
-//     }
-// }
+impl Component for OrderItem {
+    type Message = ();
+    type Properties = Self;
+
+    fn create(props: Self::Properties, _link: ComponentLink<Self>) -> Self {
+        props
+    }
+
+    fn update(&mut self, _msg: Self::Message) -> bool {
+        true
+    }
+
+    fn view(&self) -> Html {
+        html! {
+            <tr>
+                <td class="product"><b>{&self.product_name}</b></td>
+                <td class="quantity" align="center">{self.quantity}</td>
+            </tr>
+        }
+    }
+}
