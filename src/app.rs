@@ -1,17 +1,15 @@
 use yew::prelude::*;
-use crate::woocsv::{parse_csv, WooCommerceRow, WooCommerceRowBuilder, InputData, OrderDetails, OrderDetailsBuilder, OrderItem, OrderItemBuilder, parse_product_data, ProductData};
+use crate::woocsv::{parse_csv, WooCommerceRow, WooCommerceRowBuilder, InputData, OrderDetails, OrderDetailsBuilder, OrderItem, OrderItemBuilder};
 use wasm_bindgen::__rt::std::error::Error;
 
 #[derive(Debug)]
 pub enum Msg {
     UpdateCsv(String),
-    UpdateProducts(String),
 }
 
 pub struct Gui {
     link: ComponentLink<Self>,
     input_data: Option<InputData>,
-    product_list: Option<ProductData>,
     error: Option<Box<dyn Error>>,
 }
 
@@ -20,14 +18,14 @@ impl Component for Gui {
     type Properties = ();
 
     fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        Gui { link, input_data: None, product_list: None, error: None }
+        Gui { link, input_data: None, error: None }
     }
 
     fn update(&mut self, msg: Self::Message) -> bool {
         match msg {
             Msg::UpdateCsv(data) => {
                 stdweb::console!(log, "Received update csv:", &data);
-                let parsed = parse_csv(&data);
+                let parsed = parse_csv(data);
                 match parsed {
                     Ok(data) => {
                         self.input_data = Some(data);
@@ -36,20 +34,6 @@ impl Component for Gui {
                     Err(e) => {
                         self.error = Some(e.into());
                         self.input_data = None;
-                    }
-                }
-            }
-            Msg::UpdateProducts(products) => {
-                stdweb::console!(log, "Received product list:", &products);
-                let parsed = parse_product_data(&products);
-                match parsed {
-                    Ok(data) => {
-                        self.product_list = Some(data);
-                        self.error = None;
-                    }
-                    Err(e) => {
-                        self.error = Some(e.into());
-                        self.product_list = None;
                     }
                 }
             }
@@ -66,11 +50,6 @@ impl Component for Gui {
                 <textarea
                     rows="30" cols="120"
                     oninput=self.link.callback(|e: InputData| Msg::UpdateCsv(e.value))
-                />
-                <div>{"Copy-paste your product list into the textarea below:"}</div>
-                <textarea
-                    rows="30" cols="120"
-                    oninput=self.link.callback(|e: InputData| Msg::UpdateProducts(e.value))
                 />
                 {
                     self.input_data.as_ref().map(|d| html!{
@@ -97,25 +76,12 @@ impl Component for Gui {
                                 <tr>
                                     <th class="product" align="left">{"Prodotto"}</th>
                                     <th class="quantity" align="right">{"Quantità"}</th>
-                                    <th class="barcode" align="right">{"Barcode"}</th>
                                 </tr>
                             </thead>
                             <tbody> {
                                 d.summary().iter().map(|(prod, qty)| html! {
                                     <tr>
-                                        <td>{&prod}</td>
-                                        <td align="right">{format!("{}", qty)}</td>
-                                        <td aligh="right">{
-                                            self.product_list.as_ref()
-                                                .and_then(|products| products.get(&prod))
-                                                .map(|prod| html!{
-                                                    <img src={format!("https://barcode.tec-it.com/barcode.ashx?data={}&code=EAN13&dpi=96", prod.ean_13_vendor)}/>
-                                                })
-                                                .unwrap_or_else(|| html!{
-                                                    <span>{"No product data"}</span>
-                                                })
-                                        }
-                                        </td>
+                                        <td>{&prod}</td> <td align="right">{format!("{}", qty)}</td>
                                     </tr>
                                 }).collect::<Html>()
                             } </tbody>
