@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use crate::woocsv::{parse_csv, WooCommerceRow, WooCommerceRowBuilder, InputData, OrderDetails, OrderDetailsBuilder, OrderItem, OrderItemBuilder};
+use crate::woocsv::{parse_csv, WooCommerceRow, WooCommerceRowBuilder, InputData, OrderDetails, OrderDetailsBuilder, OrderItem, OrderItemBuilder, DeliveryDetail, DeliveryDetailBuilder};
 use wasm_bindgen::__rt::std::error::Error;
 
 #[derive(Debug)]
@@ -161,6 +161,36 @@ impl Properties for OrderDetails {
     }
 }
 
+impl Component for DeliveryDetail {
+    type Message = ();
+    type Properties = Self;
+
+    fn create(props: Self::Properties, _link: ComponentLink<Self>) -> Self {
+        props
+    }
+
+    fn update(&mut self, _msg: Self::Message) -> bool {
+        false
+    }
+
+    fn view(&self) -> Html {
+        html!{
+            <tr>
+                <td align="right"><b>{&self.name}</b></td>
+                <td align="center">{&self.data}</td>
+            </tr>
+        }
+    }
+}
+
+impl Properties for DeliveryDetail {
+    type Builder = DeliveryDetailBuilder;
+
+    fn builder() -> Self::Builder {
+        Self::Builder::default()
+    }
+}
+
 impl Component for OrderDetails {
     type Message = ();
     type Properties = Self;
@@ -175,53 +205,46 @@ impl Component for OrderDetails {
 
     fn view(&self) -> Html {
         html! {
-         <div class="the-label">
-            <table class="address" width="100%">
-                <tr>
-                    <td width="60%" valign="top">
-                        <span>{format!("Ordine N.: {}", self.order_id)}</span><br/>
-                        <span>{format!("Data: {}", self.order_date)}</span><br/>
-                        <span>{format!("Tel.: {}", self.billing_phone_number)}</span><br/>
-                    </td>
-                    <td>
-                        <b>{"Indirizzo:"}</b><br/>
-                        <span>{&self.customer_name}</span><br/>
-                        <span>{&self.shipping_address_line_1}</span><br/>
-                        <span>{&self.shipping_address_line_2}</span><br/>
-                        <span>{format!("Milano, {}", self.shipping_postcode)}</span><br/>
-                        <span>{"Italia"}</span><br/>
-                    </td>
-                </tr>
-            </table>
+        <div class="packages"> { self.packages.iter().enumerate().map(|(i, products)| { html! {
+            <div class="the-label">
+                <table class="address" width="100%">
+                    <tr>
+                        <td width="60%" valign="top">
+                            <span>{format!("Ordine N.: {}", self.order_id)}</span><br/>
+                            <span>{format!("Data: {}", self.order_date)}</span><br/>
+                            <span>{format!("Tel.: {}", self.billing_phone_number)}</span><br/>
+                        </td>
+                        <td>
+                            <b>{"Indirizzo:"}</b><br/>
+                            <span>{&self.customer_name}</span><br/>
+                            <span>{&self.shipping_address_line_1}</span><br/>
+                            <span>{&self.shipping_address_line_2}</span><br/>
+                            <span>{format!("Milano, {}", self.shipping_postcode)}</span><br/>
+                            <span>{"Italia"}</span><br/>
+                        </td>
+                    </tr>
+                </table>
 
-            <table class="order-items" width="100%">
-                <thead>
-                    <tr height="3vm">
-                        <th class="product">{"Prodotto"}</th>
-                        <th class="quantity">{"Quantità"}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {
-                        self.products.iter().map(|product| { product.view() }).collect::<Html>()
-                    }
-                    <tr>
-                        <td align="right"><b>{"Consegna"}</b></td>
-                        <td align="center">{&self.delivery}</td>
-                    </tr>
-                    <tr>
-                        <td align="right"><b>{"Metodo Pagamento"}</b></td>
-                        <td align="center">{&self.payment_gateway}</td>
-                    </tr>
-                    <tr>
-                        <td align="right"><b>{"Totale"}</b></td>
-                        <td align="center">{format!("{}€", self.order_total)}</td>
-                    </tr>
-                </tbody>
-            </table>
-            <p><br/></p>
-        </div>
+                <table class="order-items" width="100%">
+                    <thead>
+                        <tr height="3vm">
+                            <th class="quantity">{"Quantità"}</th>
+                            <th class="product">{"Prodotto"}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {
+                            products.iter().map(|product| product.view()).collect::<Html>()
+                        }
+                        {
+                            self.delivery_details(i).iter().map(|d| d.view()).collect::<Html>()
+                        }
+                    </tbody>
+                </table>
+                <p><br/></p>
+            </div> }}).collect::<Html>()
         }
+        </div> }
     }
 }
 
@@ -248,8 +271,8 @@ impl Component for OrderItem {
     fn view(&self) -> Html {
         html! {
             <tr>
-                <td class="product"><b>{&self.product_name}</b></td>
                 <td class="quantity" align="center">{self.quantity}</td>
+                <td class="product"><b>{&self.product_name}</b></td>
             </tr>
         }
     }

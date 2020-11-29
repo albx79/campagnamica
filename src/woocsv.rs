@@ -4,6 +4,7 @@ use derive_builder::Builder;
 use anyhow::{Context, Result};
 use wasm_bindgen::__rt::core::fmt::{Display, Formatter};
 use wasm_bindgen::__rt::std::collections::HashMap;
+use wasm_bindgen::__rt::core::num::ParseFloatError;
 
 pub fn parse_csv(data: String) -> Result<InputData> {
     let reader = ReaderBuilder::new().from_reader(data.as_bytes());
@@ -64,7 +65,7 @@ pub struct InputData {
 pub struct OrderDetails {
     pub order_id: u32,
     pub customer_name: String,
-    pub order_total: String,
+    pub order_total: Price,
     pub delivery: String,
     pub payment_gateway: String,
     pub shipping_address_line_1: String,
@@ -72,7 +73,44 @@ pub struct OrderDetails {
     pub shipping_postcode: String,
     pub order_date: String,
     pub billing_phone_number: String,
-    pub products: Vec<OrderItem>,
+    pub packages: Vec<Vec<OrderItem>>,
+}
+
+#[derive(Clone, Builder)]
+pub struct DeliveryDetail {
+    pub name: &'static str,
+    pub data: String,
+    pub highlight: bool,
+}
+
+impl OrderDetails {
+    pub fn delivery_details(&self, i: usize) -> Box<[DeliveryDetail]> {
+        let show_package_number = self.packages.len() > 1;
+        let show_totals = i + 1 == self.packages.len();
+        let mut details = Vec::new();
+
+        if show_totals {
+            details.append(&mut vec![
+                    DeliveryDetail{ name: "Consegna", data: self.delivery.clone(), highlight: false },
+                    DeliveryDetail{ name: "Metodo  Pagamento", data: self.payment_gateway.clone(), highlight: false },
+                    DeliveryDetail{ name: "Totale", data: format!("{}€", self.order_total.display), highlight: false },
+            ]);
+        }
+
+        if show_package_number {
+            details.push(DeliveryDetail{ name: "", data: format!("{} COLLO {} DI {}", self.package_name(i), i+1, self.packages.len()), highlight: true});
+        }
+
+        details.into_boxed_slice()
+    }
+
+    fn package_name(&self, index: usize) -> &str {
+        if index == 0 {
+            ""
+        } else {
+            &self.customer_name
+        }
+    }
 }
 
 #[derive(Clone, Builder)]
@@ -105,16 +143,33 @@ impl InputData {
                 billing_phone_number: row.billing_phone_number.clone(),
                 payment_gateway: row.payment_gateway.clone(),
                 order_date: row.order_date.clone(),
-                order_total: row.order_total.clone(),
+                order_total: Price::parse(&row.order_total)?,
                 delivery: Self::map_shipping_to_delivery(row.order_shipping),
-                products: Vec::new(),
+                packages: Vec::new(),
             };
-            for o in rows.iter().sorted_by_key(|r| &r.product_name) {
-                order_details.products.push(OrderItem {
-                    quantity: o.quantity,
-                    product_name: o.product_name.clone(),
-                    item_price: o.item_price.parse().with_context(|| format!("Invalid price: {}", o.item_price))?
-                })
+            let num_packages = { let val = order_details.order_total.value;
+                if val <= 40.0 {
+                    1
+                } else if val <= 70.0 {
+                    2
+                } else {
+                    3
+                }
+            };
+            let items_per_package = rows.len() / num_packages;
+            for p in &rows.into_iter()
+                .sorted_by_key(|r| &r.product_name)
+                .chunks(items_per_package)
+            {
+                let mut package_items = Vec::new();
+                for o in p.into_iter() {
+                    package_items.push(OrderItem {
+                        quantity: o.quantity,
+                        product_name: o.product_name.clone(),
+                        item_price: o.item_price.parse().with_context(|| format!("Invalid price: {}", o.item_price))?
+                    })
+                }
+                order_details.packages.push(package_items);
             }
 
             result.push(order_details);
@@ -153,6 +208,22 @@ impl Display for PriceParseError {
 }
 impl Error for PriceParseError {}
 
+#[derive(Clone)]
+pub struct Price {
+    pub value: f32,
+    pub display: String,
+}
+
+impl Price {
+    fn parse(s: &str) -> Result<Self, ParseFloatError> {
+        use core::str::FromStr;
+        Ok(Price {
+            display: s.to_string(),
+            value: f32::from_str(&s.replace(',', "."))?,
+        })
+    }
+}
+
 #[cfg(test)]
 const DATA: &str = r###""Order ID","Order Date","Order Status","Customer Name","Order Total","Order Shipping","Payment Gateway","Shipping Method","Shipping Address Line 1","Shipping Address Line 2","Shipping Zip/Postcode","Billing Phone Number",_transaction_id,"Product Name","Quantity of items purchased","Item price EXCL. tax"
 5358,2020/05/24,processing,"PERINO LUPO","57,10",5,"PayPal o carta di credito",flat_rate:1,"VIA DEI PAZZI 0","SCALA A DESTRA SECONDO PIANO",20146,3355700000,0P128552W4082524Y,"SELEZIONE B ""IL VEGETARIANO""",1,40
@@ -177,18 +248,18 @@ fn test_parse_csv() {
     let labels = parsed.labels().unwrap();
     assert_eq!(labels.len(), 2);
     assert_eq!(labels[0].order_id, 5358);
-    assert_eq!(labels[0].products.len(), 4);
+    assert_eq!(labels[0].packages[0].len(), 4);
     assert_eq!(&labels[0].delivery, "5 €");
-    assert_eq!(labels[0].products[3].product_name, r#"SELEZIONE B "IL VEGETARIANO""#);
-    assert_eq!(labels[0].products[3].item_price, 40.0);
-    assert_eq!(labels[0].products[3].quantity, 1);
-    assert_eq!(labels[0].products[2].product_name, r#"GALLETTO VALLE SPLUGA ALLE ERBE DI MONTAGNA 500 g"#);
-    assert_eq!(labels[0].products[2].item_price, 4.6);
-    assert_eq!(labels[0].products[2].quantity, 1);
+    assert_eq!(labels[0].packages[0][3].product_name, r#"SELEZIONE B "IL VEGETARIANO""#);
+    assert_eq!(labels[0].packages[0][3].item_price, 40.0);
+    assert_eq!(labels[0].packages[0][3].quantity, 1);
+    assert_eq!(labels[0].packages[0][2].product_name, r#"GALLETTO VALLE SPLUGA ALLE ERBE DI MONTAGNA 500 g"#);
+    assert_eq!(labels[0].packages[0][2].item_price, 4.6);
+    assert_eq!(labels[0].packages[0][2].quantity, 1);
 
     assert_eq!(labels[1].order_id, 5357);
     assert_eq!(&labels[1].delivery, "local pick up");
-    assert_eq!(labels[1].products.len(), 5);
+    assert_eq!(labels[1].packages[0].len(), 5);
 
     let summary = parsed.summary();
     assert_eq!(summary.len(), 8);
