@@ -91,14 +91,14 @@ impl OrderDetails {
 
         if show_totals {
             details.append(&mut vec![
-                    DeliveryDetail{ name: "Consegna", data: self.delivery.clone(), highlight: false },
-                    DeliveryDetail{ name: "Metodo  Pagamento", data: self.payment_gateway.clone(), highlight: false },
-                    DeliveryDetail{ name: "Totale", data: format!("{}€", self.order_total.display), highlight: false },
+                DeliveryDetail { name: "Consegna", data: self.delivery.clone(), highlight: false },
+                DeliveryDetail { name: "Metodo  Pagamento", data: self.payment_gateway.clone(), highlight: false },
+                DeliveryDetail { name: "Totale", data: format!("{}€", self.order_total.display), highlight: false },
             ]);
         }
 
         if show_package_number {
-            details.push(DeliveryDetail{ name: "", data: format!("{} COLLO {} DI {}", self.package_name(i), i+1, self.packages.len()), highlight: true});
+            details.push(DeliveryDetail { name: "", data: format!("{} COLLO {} DI {}", self.package_name(i), i + 1, self.packages.len()), highlight: true });
         }
 
         details.into_boxed_slice()
@@ -147,7 +147,8 @@ impl InputData {
                 delivery: Self::map_shipping_to_delivery(row.order_shipping),
                 packages: Vec::new(),
             };
-            let num_packages: i32 = { let val = order_details.order_total.value;
+            let num_packages = {
+                let val = order_details.order_total.value;
                 if val <= 40.0 {
                     1
                 } else if val <= 70.0 {
@@ -156,11 +157,7 @@ impl InputData {
                     3
                 }
             };
-            let num_rows = rows.len() as i32;
-            let (mut items_per_package, remainder) = (num_rows / num_packages, num_rows % num_packages);
-            if remainder > 0 {
-                items_per_package += 1;
-            }
+            let items_per_package = calculate_items_per_package(rows.len() as i32, num_packages as i32);
 
             for p in &rows.into_iter()
                 .sorted_by_key(|r| &r.product_name)
@@ -171,7 +168,7 @@ impl InputData {
                     package_items.push(OrderItem {
                         quantity: o.quantity,
                         product_name: o.product_name.clone(),
-                        item_price: o.item_price.parse().with_context(|| format!("Invalid price: {}", o.item_price))?
+                        item_price: o.item_price.parse().with_context(|| format!("Invalid price: {}", o.item_price))?,
                     })
                 }
                 order_details.packages.push(package_items);
@@ -203,13 +200,23 @@ impl InputData {
     }
 }
 
+fn calculate_items_per_package(num_rows: i32, num_packages: i32) -> usize {
+    let (mut items_per_package, remainder) = (num_rows / num_packages, num_rows % num_packages);
+    if remainder > 0 {
+        items_per_package += 1;
+    }
+    items_per_package as usize
+}
+
 #[derive(Debug)]
 pub struct PriceParseError(String);
+
 impl Display for PriceParseError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         self.0.fmt(f)
     }
 }
+
 impl Error for PriceParseError {}
 
 #[derive(Clone)]
