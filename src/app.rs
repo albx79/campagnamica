@@ -61,6 +61,7 @@ impl Component for Gui {
                                 {
                                     labels.iter().map(|label| label.view()).collect::<Html>()
                                 }
+                                <hr/>
                                 <p>{format!("Number of deliveries: {}", labels.len())}</p>
                                 </div>
                             }).unwrap_or_else(|e| {
@@ -205,46 +206,57 @@ impl Component for OrderDetails {
 
     fn view(&self) -> Html {
         html! {
-        <div class="packages"> { self.packages.iter().enumerate().map(|(i, products)| { html! {
-            <div class="the-label">
-                <table class="address" width="100%">
-                    <tr>
-                        <td width="60%" valign="top">
-                            <span>{format!("Ordine N.: {}", self.order_id)}</span><br/>
-                            <span>{format!("Data: {}", self.order_date)}</span><br/>
-                            <span>{format!("Tel.: {}", self.billing_phone_number)}</span><br/>
-                        </td>
-                        <td>
-                            <b>{"Indirizzo:"}</b><br/>
-                            <span>{&self.customer_name}</span><br/>
-                            <span>{&self.shipping_address_line_1}</span><br/>
-                            <span>{&self.shipping_address_line_2}</span><br/>
-                            <span>{format!("Milano, {}", self.shipping_postcode)}</span><br/>
-                            <span>{"Italia"}</span><br/>
-                        </td>
-                    </tr>
-                </table>
+        <div class="packages">
+            <div class="address"> {
+                address_view(self)
+            } </div>
+        {
+            self.packages.iter().enumerate().map(|(i, products)| { html! {
+                <div class="the-label">
 
-                <table class="order-items" width="100%">
-                    <thead>
-                        <tr height="3vm">
-                            <th class="quantity">{"Quantità"}</th>
-                            <th class="product">{"Prodotto"}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {
-                            products.iter().map(|product| product.view()).collect::<Html>()
-                        }
-                        {
-                            self.delivery_details(i).iter().map(|d| d.view()).collect::<Html>()
-                        }
-                    </tbody>
-                </table>
-                <p><br/></p>
-            </div> }}).collect::<Html>()
+                    <table class="order-items" width="100%">
+                        <thead>
+                            <tr height="3vm">
+                                <th class="quantity">{"Quantità"}</th>
+                                <th class="product">{"Prodotto"}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                products.iter().map(|product| product.view()).collect::<Html>()
+                            }
+                            {
+                                self.delivery_details(i).iter().map(|d| d.view()).collect::<Html>()
+                            }
+                        </tbody>
+                    </table>
+                    <p><br/></p>
+                </div>
+            }}).collect::<Html>()
         }
         </div> }
+    }
+}
+
+fn address_view(order: &OrderDetails) -> Html {
+    html!{
+        <table class="address" width="100%">
+            <tr>
+                <td width="60%" valign="top">
+                    <span>{format!("Ordine N.: {}", order.order_id)}</span><br/>
+                    <span>{format!("Data: {}", order.order_date)}</span><br/>
+                    <span>{format!("Tel.: {}", order.billing_phone_number)}</span><br/>
+                </td>
+                <td>
+                    <b>{"Indirizzo:"}</b><br/>
+                    <span>{&order.customer_name}</span><br/>
+                    <span>{&order.shipping_address_line_1}</span><br/>
+                    <span>{&order.shipping_address_line_2}</span><br/>
+                    <span>{format!("Milano, {}", order.shipping_postcode)}</span><br/>
+                    <span>{"Italia"}</span><br/>
+                </td>
+            </tr>
+        </table>
     }
 }
 
