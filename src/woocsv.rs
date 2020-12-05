@@ -6,7 +6,7 @@ use wasm_bindgen::__rt::core::fmt::{Display, Formatter};
 use wasm_bindgen::__rt::std::collections::HashMap;
 use wasm_bindgen::__rt::core::num::ParseFloatError;
 
-pub fn parse_csv(data: String) -> Result<InputData> {
+pub fn parse_csv(data: &str) -> Result<InputData> {
     let reader = ReaderBuilder::new().from_reader(data.as_bytes());
     let mut rdr = csv::Reader::from(reader);
     let mut data = Vec::new();
@@ -147,7 +147,7 @@ impl InputData {
                 delivery: Self::map_shipping_to_delivery(row.order_shipping),
                 packages: Vec::new(),
             };
-            let num_packages = { let val = order_details.order_total.value;
+            let num_packages: i32 = { let val = order_details.order_total.value;
                 if val <= 40.0 {
                     1
                 } else if val <= 70.0 {
@@ -156,10 +156,15 @@ impl InputData {
                     3
                 }
             };
-            let items_per_package = rows.len() / num_packages;
+            let num_rows = rows.len() as i32;
+            let (mut items_per_package, remainder) = (num_rows / num_packages, num_rows % num_packages);
+            if remainder > 0 {
+                items_per_package += 1;
+            }
+
             for p in &rows.into_iter()
                 .sorted_by_key(|r| &r.product_name)
-                .chunks(items_per_package)
+                .chunks(items_per_package as usize)
             {
                 let mut package_items = Vec::new();
                 for o in p.into_iter() {
@@ -171,7 +176,6 @@ impl InputData {
                 }
                 order_details.packages.push(package_items);
             }
-
             result.push(order_details);
         }
 
@@ -225,21 +229,11 @@ impl Price {
 }
 
 #[cfg(test)]
-const DATA: &str = r###""Order ID","Order Date","Order Status","Customer Name","Order Total","Order Shipping","Payment Gateway","Shipping Method","Shipping Address Line 1","Shipping Address Line 2","Shipping Zip/Postcode","Billing Phone Number",_transaction_id,"Product Name","Quantity of items purchased","Item price EXCL. tax"
-5358,2020/05/24,processing,"PERINO LUPO","57,10",5,"PayPal o carta di credito",flat_rate:1,"VIA DEI PAZZI 0","SCALA A DESTRA SECONDO PIANO",20146,3355700000,0P128552W4082524Y,"SELEZIONE B ""IL VEGETARIANO""",1,40
-5358,2020/05/24,processing,"PERINO LUPO","57,10",5,"PayPal o carta di credito",flat_rate:1,"VIA DEI PAZZI 0","SCALA A DESTRA SECONDO PIANO",20146,3355700000,0P128552W4082524Y,"CARNE TRITA DI MANZO PER RAGU' E POLPETTE 500 g",1,3.5
-5358,2020/05/24,processing,"PERINO LUPO","57,10",5,"PayPal o carta di credito",flat_rate:1,"VIA DEI PAZZI 0","SCALA A DESTRA SECONDO PIANO",20146,3355700000,0P128552W4082524Y,"FETTINE DI LONZA DI SUINO 500 g",1,4
-5358,2020/05/24,processing,"PERINO LUPO","57,10",5,"PayPal o carta di credito",flat_rate:1,"VIA DEI PAZZI 0","SCALA A DESTRA SECONDO PIANO",20146,3355700000,0P128552W4082524Y,"GALLETTO VALLE SPLUGA ALLE ERBE DI MONTAGNA 500 g",1,4.6
-5357,2020/05/24,processing,"Maria Luisa","57,90",0,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"INSALATA VARIA 500 g",1,1.4
-5357,2020/05/24,processing,"Maria Luisa","57,90",0,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"SELEZIONE B ""IL VEGETARIANO""",1,40
-5357,2020/05/24,processing,"Maria Luisa","57,90",0,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"YOGURT DI CAPRA 500 g",1,3
-5357,2020/05/24,processing,"Maria Luisa","57,90",0,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"10 ARROSTICINI DI SUINO 300 g",1,5
-5357,2020/05/24,processing,"Maria Luisa","57,90",0,"PayPal o carta di credito",flat_rate:1,"Via Da Qui 1",,20129,3332750000,5L1092726H247623G,"PANE AI CEREALI ANTICHI 500 g",1,3.5
-"###;
+const DATA: &str = include_str!("data.csv");
 
 #[test]
 fn test_parse_csv() {
-    let parsed = parse_csv(DATA.to_owned()).unwrap();
+    let parsed = parse_csv(DATA).unwrap();
     let data = &parsed.data;
     assert_eq!(data.len(), 9);
     assert_eq!(data[0].order_id, 5358);
@@ -248,18 +242,20 @@ fn test_parse_csv() {
     let labels = parsed.labels().unwrap();
     assert_eq!(labels.len(), 2);
     assert_eq!(labels[0].order_id, 5358);
-    assert_eq!(labels[0].packages[0].len(), 4);
+    assert_eq!(labels[0].packages[0].len(), 2);
+    assert_eq!(labels[0].packages[1].len(), 2);
     assert_eq!(&labels[0].delivery, "5 €");
-    assert_eq!(labels[0].packages[0][3].product_name, r#"SELEZIONE B "IL VEGETARIANO""#);
-    assert_eq!(labels[0].packages[0][3].item_price, 40.0);
-    assert_eq!(labels[0].packages[0][3].quantity, 1);
-    assert_eq!(labels[0].packages[0][2].product_name, r#"GALLETTO VALLE SPLUGA ALLE ERBE DI MONTAGNA 500 g"#);
-    assert_eq!(labels[0].packages[0][2].item_price, 4.6);
-    assert_eq!(labels[0].packages[0][2].quantity, 1);
+    assert_eq!(labels[0].packages[1][1].product_name, r#"SELEZIONE B "IL VEGETARIANO""#);
+    assert_eq!(labels[0].packages[1][1].item_price, 40.0);
+    assert_eq!(labels[0].packages[1][1].quantity, 1);
+    assert_eq!(labels[0].packages[1][0].product_name, r#"GALLETTO VALLE SPLUGA ALLE ERBE DI MONTAGNA 500 g"#);
+    assert_eq!(labels[0].packages[1][0].item_price, 4.6);
+    assert_eq!(labels[0].packages[1][0].quantity, 1);
 
     assert_eq!(labels[1].order_id, 5357);
     assert_eq!(&labels[1].delivery, "local pick up");
-    assert_eq!(labels[1].packages[0].len(), 5);
+    assert_eq!(labels[1].packages[0].len(), 3);
+    assert_eq!(labels[1].packages[1].len(), 2);
 
     let summary = parsed.summary();
     assert_eq!(summary.len(), 8);
@@ -270,7 +266,17 @@ fn test_parse_csv() {
 
 #[test]
 fn test_parse_empty_data() {
-    let parsed = parse_csv("".to_owned()).unwrap();
+    let parsed = parse_csv("").unwrap();
     assert_eq!(parsed.data.len(), 0);
+}
+
+#[cfg(test)]
+const BIG_DATA: &str = include_str!("data-big.csv");
+
+#[test]
+fn test_multiple_packages() {
+    let parsed = parse_csv(BIG_DATA).unwrap().labels().unwrap();
+    let must_have_3_packages = &parsed[3];
+    assert_eq!(must_have_3_packages.packages.len(), 3);
 }
 

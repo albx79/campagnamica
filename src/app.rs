@@ -25,7 +25,7 @@ impl Component for Gui {
         match msg {
             Msg::UpdateCsv(data) => {
                 stdweb::console!(log, "Received update csv:", &data);
-                let parsed = parse_csv(data);
+                let parsed = parse_csv(&data);
                 match parsed {
                     Ok(data) => {
                         self.input_data = Some(data);
