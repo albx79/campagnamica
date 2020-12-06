@@ -153,8 +153,10 @@ impl InputData {
                     1
                 } else if val <= 70.0 {
                     2
-                } else {
+                } else if val <= 80.0 {
                     3
+                } else {
+                    4
                 }
             };
             let items_per_package = calculate_items_per_package(rows.len() as i32, num_packages as i32);
@@ -283,7 +285,7 @@ const BIG_DATA: &str = include_str!("data-big.csv");
 #[test]
 fn test_multiple_packages() {
     let parsed = parse_csv(BIG_DATA).unwrap().labels().unwrap();
-    let must_have_3_packages = &parsed[3];
-    assert_eq!(must_have_3_packages.packages.len(), 3);
+    let must_have_4_packages = &parsed[3];
+    assert_eq!(must_have_4_packages.packages.len(), 4);
 }
 
