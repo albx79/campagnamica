@@ -127,7 +127,7 @@ pub struct SummaryRow {
 }
 
 impl InputData {
-    pub fn labels(&self) -> Result<Vec<OrderDetails>> {
+    pub fn labels(&self, multipack: bool) -> Result<Vec<OrderDetails>> {
         use itertools::Itertools;
 
         let mut result = Vec::new();
@@ -149,7 +149,7 @@ impl InputData {
             };
             let num_packages = {
                 let val = order_details.order_total.value;
-                if val <= 40.0 {
+                if val <= 40.0 || !multipack {
                     1
                 } else if val <= 70.0 {
                     2
@@ -248,7 +248,7 @@ fn test_parse_csv() {
     assert_eq!(data[0].order_id, 5358);
     assert_eq!(data[8].item_price, "3.5");
 
-    let labels = parsed.labels().unwrap();
+    let labels = parsed.labels(true).unwrap();
     assert_eq!(labels.len(), 2);
     assert_eq!(labels[0].order_id, 5358);
     assert_eq!(labels[0].packages[0].len(), 2);
@@ -284,8 +284,15 @@ const BIG_DATA: &str = include_str!("data-big.csv");
 
 #[test]
 fn test_multiple_packages() {
-    let parsed = parse_csv(BIG_DATA).unwrap().labels().unwrap();
+    let parsed = parse_csv(BIG_DATA).unwrap().labels(true).unwrap();
     let must_have_4_packages = &parsed[3];
     assert_eq!(must_have_4_packages.packages.len(), 4);
 }
 
+#[test]
+fn test_no_multipack() {
+    let parsed = parse_csv(BIG_DATA).unwrap().labels(false).unwrap();
+    for i in 0..4 {
+        assert_eq!(parsed[i].packages.len(), 1);
+    }
+}

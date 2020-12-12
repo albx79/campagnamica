@@ -5,11 +5,13 @@ use wasm_bindgen::__rt::std::error::Error;
 #[derive(Debug)]
 pub enum Msg {
     UpdateCsv(String),
+    ToggleMultipack,
 }
 
 pub struct Gui {
     link: ComponentLink<Self>,
     input_data: Option<InputData>,
+    multipack: bool,
     error: Option<Box<dyn Error>>,
 }
 
@@ -18,7 +20,7 @@ impl Component for Gui {
     type Properties = ();
 
     fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        Gui { link, input_data: None, error: None }
+        Gui { link, input_data: None, multipack: true, error: None }
     }
 
     fn update(&mut self, msg: Self::Message) -> bool {
@@ -36,6 +38,10 @@ impl Component for Gui {
                         self.input_data = None;
                     }
                 }
+            },
+            Msg::ToggleMultipack => {
+                stdweb::console!(log, "Toggle multipack; current = ", self.multipack);
+                self.multipack = !self.multipack;
             }
         };
         true
@@ -51,12 +57,14 @@ impl Component for Gui {
                     rows="30" cols="120"
                     oninput=self.link.callback(|e: InputData| Msg::UpdateCsv(e.value))
                 />
+                <input type="checkbox" id="checkbox-multipack" checked={self.multipack} onclick=self.link.callback(|_| Msg::ToggleMultipack)/>
+                <label for="checkbox-multipack">{"Multi-pack"}</label>
                 {
                     self.input_data.as_ref().map(|d| html!{
                     <div>
                         <h2>{"Labels"}</h2>
                         {
-                            d.labels().map(|labels| html!{
+                            d.labels(self.multipack).map(|labels| html!{
                                 <div>
                                 {
                                     labels.iter().map(|label| label.view()).collect::<Html>()
