@@ -47,6 +47,10 @@ impl Component for Gui {
         true
     }
 
+    fn change(&mut self, _props: Self::Properties) -> bool {
+        true
+    }
+
     fn view(&self) -> Html {
         use yew::InputData;
         let empty = html! {<div/>};
@@ -120,6 +124,10 @@ impl Component for InputData {
         true // should render
     }
 
+    fn change(&mut self, _props: Self::Properties) -> bool {
+        true
+    }
+
     fn view(&self) -> Html {
         html! {
         <table>
@@ -182,6 +190,10 @@ impl Component for DeliveryDetail {
         false
     }
 
+    fn change(&mut self, _props: Self::Properties) -> bool {
+        true
+    }
+
     fn view(&self) -> Html {
         html!{
             <tr>
@@ -209,6 +221,10 @@ impl Component for OrderDetails {
     }
 
     fn update(&mut self, _msg: Self::Message) -> bool {
+        true
+    }
+
+    fn change(&mut self, _props: Self::Properties) -> bool {
         true
     }
 
@@ -285,6 +301,10 @@ impl Component for OrderItem {
     }
 
     fn update(&mut self, _msg: Self::Message) -> bool {
+        true
+    }
+
+    fn change(&mut self, _props: Self::Properties) -> bool {
         true
     }
 

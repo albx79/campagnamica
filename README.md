@@ -19,10 +19,17 @@ Anyone wishing to edit this code should familiarise themselves with [Yew](https:
 
 ### 1) Install `Rust`, `wasm-pack` and `rollup`
 
-Follow the instructions at https://www.rust-lang.org/tools/install and follow the `installation` 
-link at [`wasm-pack`](https://github.com/rustwasm/wasm-pack).
-
-Use `npm` to install `rollup`. 
+ * Install rust 1.42: follow the instructions at https://www.rust-lang.org/tools/install; then 
+ run the following commands:
+    ```
+    rustup install 1.42
+    rustup default 1.42
+    ```
+    this ensures that the correct rust version runs by default (there's a bug in a library 
+    that prevents using a newer version);
+    
+ * Install wasm-pack: follow the `installation` link at [`wasm-pack`](https://github.com/rustwasm/wasm-pack);
+ * Use `npm` to install `rollup`. 
 
 ### 2) Build
 
