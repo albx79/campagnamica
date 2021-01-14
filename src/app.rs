@@ -56,17 +56,19 @@ impl Component for Gui {
         let empty = html! {<div/>};
         html! {
             <div width="100%">
-                <div>{"Copy-paste your woocommerce CSV into the textarea below:"}</div>
-                <textarea
-                    rows="30" cols="120"
-                    oninput=self.link.callback(|e: InputData| Msg::UpdateCsv(e.value))
-                />
-                <input type="checkbox" id="checkbox-multipack" checked={self.multipack} onclick=self.link.callback(|_| Msg::ToggleMultipack)/>
-                <label for="checkbox-multipack">{"Multi-pack"}</label>
+                <div class="input-area">
+                    <div>{"Copy-paste your woocommerce CSV into the textarea below:"}</div>
+                    <textarea
+                        rows="30" cols="120"
+                        oninput=self.link.callback(|e: InputData| Msg::UpdateCsv(e.value))
+                    />
+                    <input type="checkbox" id="checkbox-multipack" checked={self.multipack} onclick=self.link.callback(|_| Msg::ToggleMultipack)/>
+                    <label for="checkbox-multipack">{"Multi-pack"}</label>
+                    <h2>{"Labels"}</h2>
+                </div>
                 {
                     self.input_data.as_ref().map(|d| html!{
                     <div>
-                        <h2>{"Labels"}</h2>
                         {
                             d.labels(self.multipack).map(|labels| html!{
                                 <div>
