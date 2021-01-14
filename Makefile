@@ -10,3 +10,6 @@ serve: build
 clean:
 	cargo clean
 	rm -R ./pkg/*
+
+package: build
+	zip -r campagnamica.zip index.html pkg
