@@ -1,6 +1,6 @@
 ## About
 
-This is a web-app to convert the CSV produced by Wordpress's WooCommerce plugin into
+This is a web-app to convert the CSV produced by WordPress's WooCommerce plugin into
 a format more amenable to printing labels.
 
 ## Usage
@@ -8,7 +8,7 @@ a format more amenable to printing labels.
 Just paste into the textarea the CSV provided by WooCommerce. The corresponding
 labels will appear under it. You can then copy the labels, and paste them into the word processor
 of your choosing. If there are too many labels and selecting them with the mouse is cumbersome, 
-you can click outside of the textarea and press Ctrl-A (Cmd-A on MacOS) to select everything on 
+you can click outside the textarea and press Ctrl-A (Cmd-A on macOS) to select everything on 
 the page.
 
 ## Building

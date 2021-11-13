@@ -144,7 +144,7 @@ impl InputData {
                 payment_gateway: row.payment_gateway.clone(),
                 order_date: row.order_date.clone(),
                 order_total: Price::parse(&row.order_total)?,
-                delivery: Self::map_shipping_to_delivery(row.order_shipping),
+                delivery: Self::map_shipping_to_delivery(row.order_shipping, &row.shipping_method),
                 packages: Vec::new(),
             };
             let num_packages = {
@@ -193,8 +193,8 @@ impl InputData {
             .collect()
     }
 
-    fn map_shipping_to_delivery(order_shipping: f32) -> String {
-        if order_shipping == 0.0 {
+    fn map_shipping_to_delivery(order_shipping: f32, shipping_method: &str) -> String {
+        if shipping_method.to_ascii_lowercase() == "ritiro presso il mercato" {
             "local pick up".to_owned()
         } else {
             format!("{} €", order_shipping)
@@ -244,12 +244,12 @@ const DATA: &str = include_str!("data.csv");
 fn test_parse_csv() {
     let parsed = parse_csv(DATA).unwrap();
     let data = &parsed.data;
-    assert_eq!(data.len(), 9);
+    assert_eq!(data.len(), 10);
     assert_eq!(data[0].order_id, 5358);
     assert_eq!(data[8].item_price, "3.5");
 
     let labels = parsed.labels(true).unwrap();
-    assert_eq!(labels.len(), 2);
+    assert_eq!(labels.len(), 3);
     assert_eq!(labels[0].order_id, 5358);
     assert_eq!(labels[0].packages[0].len(), 2);
     assert_eq!(labels[0].packages[1].len(), 2);
@@ -267,10 +267,12 @@ fn test_parse_csv() {
     assert_eq!(labels[1].packages[1].len(), 2);
 
     let summary = parsed.summary();
-    assert_eq!(summary.len(), 8);
+    assert_eq!(summary.len(), 9);
     assert_eq!(summary.iter().find(|(key, _)| key == r#"SELEZIONE B "IL VEGETARIANO""#).unwrap().1, 2);
     let second = &summary[1];
     assert_eq!(second.0, "CARNE TRITA DI MANZO PER RAGU' E POLPETTE 500 g");
+
+    assert_eq!(labels[2].delivery, "0 €")
 }
 
 #[test]
