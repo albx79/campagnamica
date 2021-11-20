@@ -85,7 +85,6 @@ pub struct DeliveryDetail {
 
 impl OrderDetails {
     pub fn delivery_details(&self, i: usize) -> Box<[DeliveryDetail]> {
-        let show_package_number = self.packages.len() > 1;
         let show_totals = i + 1 == self.packages.len();
         let mut details = Vec::new();
 
@@ -97,9 +96,8 @@ impl OrderDetails {
             ]);
         }
 
-        if show_package_number {
-            details.push(DeliveryDetail { name: "", data: format!("{} COLLO {} DI {}", self.package_name(i), i + 1, self.packages.len()), highlight: true });
-        }
+        let packages_str = if self.packages.len() > 1 { "Colli" } else { "Collo" };
+        details.push(DeliveryDetail { name: "", data: format!("{} {}", self.packages.len(), packages_str), highlight: true });
 
         details.into_boxed_slice()
     }

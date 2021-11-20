@@ -200,7 +200,13 @@ impl Component for DeliveryDetail {
         html!{
             <tr>
                 <td align="right"><b>{&self.name}</b></td>
-                <td align="center">{&self.data}</td>
+            {
+                if self.highlight {
+                    html!(<td align="center"><b>{&self.data}</b></td>)
+                } else {
+                    html!(<td align="center">{&self.data}</td>)
+                }
+            }
             </tr>
         }
     }
@@ -239,7 +245,14 @@ impl Component for OrderDetails {
         {
             self.packages.iter().enumerate().map(|(i, products)| { html! {
                 <div class="the-label">
-
+                    <table class="address" width="100%">
+                        <tr>
+                            <td width="60%" valign="top"></td>
+                            <td>
+                                <b>{format!("Collo {} di {}", i+1, self.packages.len())}</b>
+                            </td>
+                        </tr>
+                    </table>
                     <table class="order-items" width="100%">
                         <thead>
                             <tr height="3vm">
@@ -283,7 +296,6 @@ fn address_view(order: &OrderDetails) -> Html {
                     <span>{&order.shipping_address_line_2}</span><br/>
                     <span>{format!("Milano, {}", order.shipping_postcode)}</span><br/>
                     <span>{"Italia"}</span><br/>
-                    <span><strong>{format!("{} collo/i", order.packages.len())}</strong></span><br/>
                 </td>
             </tr>
         </table>

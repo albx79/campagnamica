@@ -12,4 +12,4 @@ clean:
 	rm -R ./pkg/*
 
 package: build
-	zip campagnamica.zip index.html pkg/* pkg/.*
+	zip campagnamica.zip index.html pkg/* pkg/.??*
